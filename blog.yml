@@ -1,0 +1,65 @@
+# Stack Definition for everything I need to server blog.tomakeitgo.com
+AWSTemplateFormatVersion: 2010-09-09
+Resources:
+  #S3 Bucket containing all resources for the blog.
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+  #Policy for allowing get access to everything in the bucket for everyone.
+  S3BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref S3Bucket
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action:
+              - 's3:GetObject'
+            Effect: Allow
+            Resource: !Join
+              - ''
+              - - 'arn:aws:s3:::'
+                - !Ref S3Bucket
+                - /*
+            Principal: '*'
+  #CloudFront Definition required to server the content from the bucket.
+  CloudFront:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Aliases: [ 'blog.tomakeitgo.com' ]
+        DefaultCacheBehavior:
+          TargetOriginId: s3bucket
+          #This uuid is amazon speak for the managed cache optimized.
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
+          ViewerProtocolPolicy: allow-all
+        DefaultRootObject: index.html
+        Enabled: true
+        PriceClass: PriceClass_100
+        Origins:
+          - DomainName: !GetAtt
+              - S3Bucket
+              - DomainName
+            Id: s3bucket
+            CustomOriginConfig:
+              OriginProtocolPolicy: match-viewer
+        ViewerCertificate:
+          SslSupportMethod: sni-only
+          AcmCertificateArn: !Join
+            - ''
+            - - 'arn:aws:acm:us-east-1:'
+              - !Ref AWS::AccountId
+              - ':certificate/36c80ae0-8618-4221-a636-039990e65e0a'
+Outputs:
+  BlogBucketRef:
+    Value: !Ref S3Bucket
+  BlogBucketArn:
+    Value: !GetAtt
+      - S3Bucket
+      - Arn

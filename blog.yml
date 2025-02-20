@@ -63,3 +63,7 @@ Outputs:
     Value: !GetAtt
       - S3Bucket
       - Arn
+  DistributionId:
+    Value: !GetAtt
+      - CloudFront
+      - Id

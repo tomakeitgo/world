@@ -15,7 +15,13 @@ bucket=$(aws cloudformation describe-stacks \
 	 --stack-name blog  \
 	 --query "Stacks[0].Outputs[?OutputKey=='BlogBucketRef'].OutputValue" \
 	 --output text)
+distributionId=$(aws cloudformation describe-stacks \
+	 --region us-west-2 \
+	 --stack-name blog  \
+	 --query "Stacks[0].Outputs[?OutputKey=='DistributionId'].OutputValue" \
+	 --output text)
 
 echo "Your bucket name is $bucket isn't that neat."
 aws s3 sync blog/_site "s3://${bucket}"
 
+aws cloudfront create-invalidation --distribution-id "${distributionId}" --paths "/*"

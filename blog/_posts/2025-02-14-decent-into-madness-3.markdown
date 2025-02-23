@@ -1,6 +1,6 @@
 ---
 layout: post
-tittle: "Decent into Madness Part 3"
+title: "AWS: DNS and Version Control"
 date: 2025-02-14 15:50:00 -0700
 categories: [ beginnings,aws ]
 ---

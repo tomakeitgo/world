@@ -1,5 +1,10 @@
 #!/bin/zsh
 
+echo 'building the blog'
+pushd blog
+jekyll build
+popd
+
 echo 'Run cloud formation deploy. It should not update if there are no changes or make the changes'
 aws cloudformation deploy --stack-name blog --region us-west-2 --template-file blog.yml
 

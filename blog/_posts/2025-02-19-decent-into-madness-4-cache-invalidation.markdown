@@ -1,6 +1,6 @@
 ---
 layout: post
-tittle: "Decent into Madness Part: 4 Cache Invalidation"
+title: "AWS: Cache Invalidation!!!"
 date: 2025-02-19 18:43:00 -0700
 categories: [ beginnings,aws ]
 ---

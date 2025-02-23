@@ -1,6 +1,6 @@
 ---
 layout: post
-tittle: "Decent into Madness Part 2"
+title: "AWS: Words Words Words"
 date: 2025-02-13 20:24:00 -0700
 categories: [beginnings,aws]
 ---

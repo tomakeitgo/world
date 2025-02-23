@@ -1,8 +1,8 @@
 ---
 layout: post
-tittle: "Decent into Madness"
+title: "AWS: Beginning"
 date: 2025-02-10 20:24:00 -0700
-categories: [beginnings]
+categories: [beginnings,aws]
 ---
 
 The goal of this blog is to start start recording my learning in one place. A place to practice writing and building software.

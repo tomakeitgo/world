@@ -3,3 +3,5 @@
 /.idea/modules.xml
 /.idea/vcs.xml
 /.idea/world.iml
+/.gradle
+/world/build

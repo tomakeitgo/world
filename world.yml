@@ -1,0 +1,147 @@
+AWSTemplateFormatVersion: 2010-09-09
+Resources:
+  #S3 Bucket used to store the binaries for deployment.
+  DeploymentBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+
+  HelloWorldLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - "lambda.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+
+  HelloWorldLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      Runtime: java21
+      Handler: com.tomakeitgo.world.HelloWorldHandler::handleRequest
+      Code:
+        S3Bucket: !Ref DeploymentBucket
+        S3Key: world_1.zip
+      Timeout: 900
+      MemorySize: 128
+      Role: !GetAtt
+        - HelloWorldLambdaRole
+        - Arn
+
+  HelloWorldLambdaLogPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      Roles:
+        - !Ref HelloWorldLambdaRole
+      PolicyName: GrantLoggingAccess
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Action: logs:CreateLogGroup
+            Resource: !Join
+              - ''
+              - - 'arn:aws:logs:us-west-2:'
+                - !Ref AWS::AccountId
+                - ':*'
+          - Effect: Allow
+            Action:
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+            Resource: !Join
+              - ''
+              - - 'arn:aws:logs:us-west-2:'
+                - !Ref AWS::AccountId
+                - ':log-group:/aws/lambda/'
+                - !Ref HelloWorldLambda
+                - ':*'
+
+  HelloWorldLambdaAllowApiCall:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref HelloWorldLambda
+      Action: lambda:InvokeFunction
+      Principal: 'apigateway.amazonaws.com'
+      SourceArn: !Join
+        - ''
+        - - 'arn:'
+          - !Ref 'AWS::Partition'
+          - ':execute-api:'
+          - !Ref 'AWS::Region'
+          - ':'
+          - !Ref 'AWS::AccountId'
+          - ':'
+          - !Ref API
+          - '/*/*/*'
+
+  API:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: WorldAPI
+      ProtocolType: HTTP
+
+  APIDomain:
+    Type: 'AWS::ApiGatewayV2::DomainName'
+    Properties:
+      DomainName: api.tomakeitgo.com
+      DomainNameConfigurations:
+        - EndpointType: REGIONAL
+          CertificateArn: !Join
+            - ''
+            - - 'arn:aws:acm:us-west-2:'
+              - !Ref AWS::AccountId
+              - ':certificate/251c8e1b-2e7f-495b-a869-828f670587d7'
+
+  APIV1Deployment:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref API
+      AutoDeploy: true
+      StageName: v1
+
+  APIMapping:
+    Type: 'AWS::ApiGatewayV2::ApiMapping'
+    DependsOn: APIDomain
+    Properties:
+      DomainName: api.tomakeitgo.com
+      ApiId: !Ref API
+      Stage: !Ref APIV1Deployment
+
+  APITestIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref API
+      Description: "Test Integration to the hello world lambda"
+      IntegrationType: AWS_PROXY
+      IntegrationMethod: POST
+      IntegrationUri: !Join
+        - ''
+        - - 'arn:'
+          - !Ref 'AWS::Partition'
+          - ':apigateway:'
+          - !Ref 'AWS::Region'
+          - ':lambda:path/2015-03-31/functions/'
+          - !GetAtt HelloWorldLambda.Arn
+          - /invocations
+      PayloadFormatVersion: 2.0
+
+  APITestRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref API
+      RouteKey: "GET /test"
+      Target: !Join
+        - '/'
+        - - 'integrations'
+          - !Ref APITestIntegration
+
+Outputs:
+  BlogBucketRef:
+    Value: !Ref DeploymentBucket
+  BlogBucketArn:
+    Value: !GetAtt
+      - DeploymentBucket
+      - Arn

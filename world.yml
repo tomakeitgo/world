@@ -1,4 +1,8 @@
 AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  BuildVersion:
+    Type: String
+    Description: Version of the jar file
 Resources:
   #S3 Bucket used to store the binaries for deployment.
   DeploymentBucket:
@@ -25,7 +29,11 @@ Resources:
       Handler: com.tomakeitgo.world.HelloWorldHandler::handleRequest
       Code:
         S3Bucket: !Ref DeploymentBucket
-        S3Key: world_1.zip
+        S3Key: !Join
+          - ''
+          - - 'world_'
+            - !Ref BuildVersion
+            - '.zip'
       Timeout: 900
       MemorySize: 128
       Role: !GetAtt
@@ -139,9 +147,5 @@ Resources:
           - !Ref APITestIntegration
 
 Outputs:
-  BlogBucketRef:
+  DeploymentBucketRef:
     Value: !Ref DeploymentBucket
-  BlogBucketArn:
-    Value: !GetAtt
-      - DeploymentBucket
-      - Arn

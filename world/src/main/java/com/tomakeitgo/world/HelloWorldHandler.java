@@ -17,7 +17,7 @@ public class HelloWorldHandler implements RequestHandler<APIGatewayV2HTTPEvent, 
         response.setHeaders(Map.of(
                 "Content-Type", "text/plain"
         ));
-        response.setBody("Hello World! Version Two");
+        response.setBody("Hello World! Different Data!");
 
         return response;
     }

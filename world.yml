@@ -9,6 +9,82 @@ Resources:
     Type: AWS::S3::Bucket
     DeletionPolicy: Retain
 
+  SimpleHeaderAuthorizerLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - "lambda.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+
+  SimpleHeaderAuthorizerLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      Runtime: java21
+      Handler: com.tomakeitgo.world.SimpleHeaderAuthorizerHandler::handleRequest
+      Code:
+        S3Bucket: !Ref DeploymentBucket
+        S3Key: !Join
+          - ''
+          - - 'world_'
+            - !Ref BuildVersion
+            - '.zip'
+      Timeout: 900
+      MemorySize: 128
+      Role: !GetAtt
+        - HelloWorldLambdaRole
+        - Arn
+
+  SimpleHeaderAuthorizerLambdaLogPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      Roles:
+        - !Ref SimpleHeaderAuthorizerLambdaRole
+      PolicyName: GrantLoggingAccess
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Action: logs:CreateLogGroup
+            Resource: !Join
+              - ''
+              - - 'arn:aws:logs:us-west-2:'
+                - !Ref AWS::AccountId
+                - ':*'
+          - Effect: Allow
+            Action:
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+            Resource: !Join
+              - ''
+              - - 'arn:aws:logs:us-west-2:'
+                - !Ref AWS::AccountId
+                - ':log-group:/aws/lambda/'
+                - !Ref SimpleHeaderAuthorizerLambda
+                - ':*'
+  SimpleHeaderAuthorizerLambdaAuthorizerCall:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref SimpleHeaderAuthorizerLambda
+      Action: lambda:InvokeFunction
+      Principal: 'apigateway.amazonaws.com'
+      #    --source-arn "arn:aws:execute-api:us-west-2:123456789012:api-id/authorizers/authorizer-id"
+      SourceArn: !Join
+        - ''
+        - - 'arn:'
+          - !Ref 'AWS::Partition'
+          - ':execute-api:'
+          - !Ref 'AWS::Region'
+          - ':'
+          - !Ref 'AWS::AccountId'
+          - ':'
+          - !Ref API
+          - '/authorizers/*'
+
   HelloWorldLambdaRole:
     Type: AWS::IAM::Role
     Properties:
@@ -91,6 +167,27 @@ Resources:
       Name: WorldAPI
       ProtocolType: HTTP
 
+  APIAuthorizer:
+    Type: AWS::ApiGatewayV2::Authorizer
+    Properties:
+      Name: LambdaAuthorizer
+      ApiId: !Ref API
+      IdentitySource:
+        - '$request.header.magic-token'
+      AuthorizerType: REQUEST
+      AuthorizerPayloadFormatVersion: 2.0
+      EnableSimpleResponses: True
+      AuthorizerUri: !Join
+        - ''
+        - - 'arn:'
+          - !Ref 'AWS::Partition'
+          - ':apigateway:'
+          - !Ref 'AWS::Region'
+          - ':lambda:path/2015-03-31/functions/'
+          - !GetAtt SimpleHeaderAuthorizerLambda.Arn
+          - '/invocations'
+      AuthorizerResultTtlInSeconds: 500
+
   APIDomain:
     Type: 'AWS::ApiGatewayV2::DomainName'
     Properties:
@@ -141,6 +238,8 @@ Resources:
     Properties:
       ApiId: !Ref API
       RouteKey: "GET /test"
+      AuthorizationType: CUSTOM
+      AuthorizerId: !Ref APIAuthorizer
       Target: !Join
         - '/'
         - - 'integrations'

@@ -1,0 +1,82 @@
+AWSTemplateFormatVersion: 2010-09-09
+Resources:
+  PlayerTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: "PlayerId"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "PlayerId"
+          KeyType: "HASH"
+      TableClass: STANDARD
+
+  ShipTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: "ShipId"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "ShipId"
+          KeyType: "HASH"
+      TableClass: STANDARD
+
+  ShipLocationTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: "LocationId"
+          AttributeType: "S"
+        - AttributeName: "ShipId"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "LocationId"
+          KeyType: "HASH"
+        - AttributeName: "ShipId"
+          KeyType: "RANGE"
+      GlobalSecondaryIndexes:
+        - IndexName: FindShip
+          KeySchema:
+            - AttributeName: "ShipId"
+              KeyType: "HASH"
+          Projection:
+            NonKeyAttributes: [ ]
+            ProjectionType: ALL
+      TableClass: STANDARD
+Outputs:
+  PlayerTableName:
+    Value: !Ref PlayerTable
+    Export:
+      Name:
+        'Fn::Sub': '${AWS::StackName}-PlayerTableName'
+  PlayerTableArn:
+    Value: !GetAtt PlayerTable.Arn
+    Export:
+      Name:
+        'Fn::Sub': '${AWS::StackName}-PlayerTableArn'
+
+  ShipTableName:
+    Value: !Ref ShipTable
+    Export:
+      Name:
+        'Fn::Sub': '${AWS::StackName}-ShipTableName'
+  ShipTableArn:
+    Value: !GetAtt ShipTable.Arn
+    Export:
+      Name:
+        'Fn::Sub': '${AWS::StackName}-ShipTableArn'
+
+  ShipLocationTableName:
+    Value: !Ref ShipLocationTable
+    Export:
+      Name:
+        'Fn::Sub': '${AWS::StackName}-ShipLocationTableName'
+  ShipLocationTableArn:
+    Value: !GetAtt ShipLocationTable.Arn
+    Export:
+      Name:
+        'Fn::Sub': '${AWS::StackName}-ShipLocationTableArn'

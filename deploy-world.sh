@@ -13,6 +13,11 @@ echo gradlew clean build buildZip -p world -P build-version="${batchTime}"
 aws s3 cp "world/build/distributions/world_${batchTime}.zip" "s3://${bucket}/world_${batchTime}.zip"
 
 aws cloudformation deploy \
+  --template-file world-data.yml \
+  --stack-name world-data-prod \
+  --region us-west-2
+
+aws cloudformation deploy \
   --template-file world.yml \
   --stack-name world \
   --region us-west-2 \

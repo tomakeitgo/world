@@ -161,6 +161,96 @@ Resources:
           - !Ref API
           - '/*/*/*'
 
+  CreatePlayerLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - "lambda.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+
+  CreatePlayerLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      Runtime: java21
+      Handler: com.tomakeitgo.world.handler.CreatePlayerHandler::handleRequest
+      Code:
+        S3Bucket: !Ref DeploymentBucket
+        S3Key: !Join
+          - ''
+          - - 'world_'
+            - !Ref BuildVersion
+            - '.zip'
+      Timeout: 900
+      MemorySize: 128
+      Role: !GetAtt CreatePlayerLambdaRole.Arn
+      Environment:
+        Variables:
+          PlayerTableName: !ImportValue 'world-data-prod-PlayerTableName'
+          ShipTableName: !ImportValue 'world-data-prod-ShipTableName'
+          ShipLocationTable: !ImportValue 'world-data-prod-ShipLocationTableName'
+
+  CreatePlayerLambdaPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      Roles:
+        - !Ref CreatePlayerLambdaRole
+      PolicyName: GrantLoggingAccess
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Action: logs:CreateLogGroup
+            Resource: !Join
+              - ''
+              - - 'arn:aws:logs:us-west-2:'
+                - !Ref AWS::AccountId
+                - ':*'
+          - Effect: Allow
+            Action:
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+            Resource: !Join
+              - ''
+              - - 'arn:aws:logs:us-west-2:'
+                - !Ref AWS::AccountId
+                - ':log-group:/aws/lambda/'
+                - !Ref CreatePlayerLambda
+                - ':*'
+          - Effect: Allow
+            Action:
+              - "dynamodb:Query"
+              - "dynamodb:Scan"
+              - "dynamodb:GetItem"
+              - "dynamodb:PutItem"
+              - "dynamodb:DeleteItem"
+            Resource:
+              - !ImportValue 'world-data-prod-PlayerTableArn'
+              - !ImportValue 'world-data-prod-ShipTableArn'
+              - !ImportValue 'world-data-prod-ShipLocationTableArn'
+
+  CreatePlayerLambdaAllowApiCall:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref CreatePlayerLambda
+      Action: lambda:InvokeFunction
+      Principal: 'apigateway.amazonaws.com'
+      SourceArn: !Join
+        - ''
+        - - 'arn:'
+          - !Ref 'AWS::Partition'
+          - ':execute-api:'
+          - !Ref 'AWS::Region'
+          - ':'
+          - !Ref 'AWS::AccountId'
+          - ':'
+          - !Ref API
+          - '/*/*/*'
+
   API:
     Type: AWS::ApiGatewayV2::Api
     Properties:
@@ -245,6 +335,35 @@ Resources:
         - - 'integrations'
           - !Ref APITestIntegration
 
+  CreatePlayerIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref API
+      Description: "Test Integration to the hello world lambda"
+      IntegrationType: AWS_PROXY
+      IntegrationMethod: POST
+      IntegrationUri: !Join
+        - ''
+        - - 'arn:'
+          - !Ref 'AWS::Partition'
+          - ':apigateway:'
+          - !Ref 'AWS::Region'
+          - ':lambda:path/2015-03-31/functions/'
+          - !GetAtt CreatePlayerLambda.Arn
+          - /invocations
+      PayloadFormatVersion: 2.0
+
+  CreatPlayerRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref API
+      RouteKey: "POST /player"
+      AuthorizationType: CUSTOM
+      AuthorizerId: !Ref APIAuthorizer
+      Target: !Join
+        - '/'
+        - - 'integrations'
+          - !Ref CreatePlayerIntegration
 Outputs:
   DeploymentBucketRef:
     Value: !Ref DeploymentBucket

@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "AWS: Writing Data Down."
-date: 2025-03-05 20:54:09 -0700
+date: 2025-03-10 16:45:02 -0700
 categories: [ beginnings,aws ]
 ---
 

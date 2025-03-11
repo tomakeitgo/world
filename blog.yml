@@ -33,7 +33,7 @@ Resources:
     Type: AWS::CloudFront::Distribution
     Properties:
       DistributionConfig:
-        Aliases: [ 'blog.tomakeitgo.com' ]
+        Aliases: [ 'blog.tomakeitgo.com', 'www.tomakeitgo.com' ]
         DefaultCacheBehavior:
           TargetOriginId: s3bucket
           #This uuid is amazon speak for the managed cache optimized.

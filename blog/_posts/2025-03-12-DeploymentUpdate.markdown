@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "AWS: Writing Data Down."
+title: "AWS: Deployment Revisited"
 date: 2025-03-12 19:24:02 -0700
 categories: [ beginnings,aws ]
 ---

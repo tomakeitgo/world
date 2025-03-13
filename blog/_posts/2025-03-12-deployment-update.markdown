@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "AWS: Deployment Revisited"
-date: 2025-03-12 19:24:02 -0700
+date: 2025-03-12 19:24:02 -0600
 categories: [ beginnings,aws ]
 ---
 

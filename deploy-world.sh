@@ -1,5 +1,4 @@
 #!/bin/zsh
-batchTime=$(date +'%Y%m%d%H%M%S')
 bucket=$(aws cloudformation describe-stacks \
 	 --region us-west-2 \
 	 --stack-name world  \
@@ -7,10 +6,20 @@ bucket=$(aws cloudformation describe-stacks \
 	 --output text \
 	 )
 
-echo gradlew clean build buildZip -p world -P build-version="${batchTime}"
-/bin/bash gradlew clean build buildZip -p world -P build-version="${batchTime}"
+echo "gradlew clean build buildZip -p world"
+/bin/bash gradlew clean build buildZip -p world
 
-aws s3 cp "world/build/distributions/world_${batchTime}.zip" "s3://${bucket}/world_${batchTime}.zip"
+echo "Put Object to ${bucket}"
+versionId=$(aws s3api put-object \
+  --bucket "${bucket}" \
+  --key "world.zip" \
+  --body "world/build/distributions/world.zip" \
+  --query "VersionId" \
+  --output text \
+  --region us-west-2 \
+  )
+
+echo "${versionId}"
 
 aws cloudformation deploy \
   --template-file world-data.yml \
@@ -22,4 +31,4 @@ aws cloudformation deploy \
   --stack-name world \
   --region us-west-2 \
   --capabilities CAPABILITY_IAM \
-  --parameter "BuildVersion=${batchTime}"
+  --parameter "VersionId=${versionId}"

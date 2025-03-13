@@ -4,7 +4,6 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPResponse;
-import com.google.gson.Gson;
 import com.tomakeitgo.world.CreatePlayer;
 import com.tomakeitgo.world.data.PlayerTable;
 import com.tomakeitgo.world.data.ShipLocationTable;
@@ -12,17 +11,13 @@ import com.tomakeitgo.world.data.ShipTable;
 import com.tomakeitgo.world.data.UUIDGenerator;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
-import java.util.Base64;
 import java.util.Map;
 
-public class CreatePlayerHandler implements RequestHandler<APIGatewayV2HTTPEvent, APIGatewayV2HTTPResponse> {
+public class CreatePlayerHandler implements RequestHandler<APIGatewayV2HTTPEvent, APIGatewayV2HTTPResponse>, WithJson {
 
     @Override
     public APIGatewayV2HTTPResponse handleRequest(APIGatewayV2HTTPEvent input, Context context) {
-        Gson gson = new Gson();
-
-        String body = input.getIsBase64Encoded() ? new String(Base64.getDecoder().decode(input.getBody())) : input.getBody();
-        var request = gson.fromJson(body, Request.class);
+        var request =  fromRequest(input, Request.class);
 
         CreatePlayer createPlayer = new CreatePlayer(new UUIDGenerator());
         CreatePlayer.Result result = createPlayer.doIt(request.getPlayerName());
@@ -37,7 +32,7 @@ public class CreatePlayerHandler implements RequestHandler<APIGatewayV2HTTPEvent
         APIGatewayV2HTTPResponse response = new APIGatewayV2HTTPResponse();
         response.setStatusCode(200);
         response.setHeaders(Map.of("Content-Type", "application/json"));
-        response.setBody(gson.toJson(new ResponseBody(result)));
+        response.setBody(toJson(new ResponseBody(result)));
         return response;
     }
 

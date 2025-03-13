@@ -1,13 +1,24 @@
 AWSTemplateFormatVersion: 2010-09-09
 Parameters:
-  BuildVersion:
+  VersionId:
     Type: String
-    Description: Version of the jar file
+    Description: zip file version.
 Resources:
   #S3 Bucket used to store the binaries for deployment.
   DeploymentBucket:
     Type: AWS::S3::Bucket
     DeletionPolicy: Retain
+    Properties:
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteOldVersions
+            Prefix: "*"
+            Status: Enabled
+            NoncurrentVersionExpiration:
+              NoncurrentDays: 1
+              NewerNoncurrentVersions: 3
 
   SimpleHeaderAuthorizerLambdaRole:
     Type: AWS::IAM::Role
@@ -29,11 +40,8 @@ Resources:
       Handler: com.tomakeitgo.world.SimpleHeaderAuthorizerHandler::handleRequest
       Code:
         S3Bucket: !Ref DeploymentBucket
-        S3Key: !Join
-          - ''
-          - - 'world_'
-            - !Ref BuildVersion
-            - '.zip'
+        S3Key: "world.zip"
+        S3ObjectVersion: !Ref VersionId
       Timeout: 900
       MemorySize: 128
       Role: !GetAtt
@@ -105,11 +113,8 @@ Resources:
       Handler: com.tomakeitgo.world.HelloWorldHandler::handleRequest
       Code:
         S3Bucket: !Ref DeploymentBucket
-        S3Key: !Join
-          - ''
-          - - 'world_'
-            - !Ref BuildVersion
-            - '.zip'
+        S3Key: "world.zip"
+        S3ObjectVersion: !Ref VersionId
       Timeout: 900
       MemorySize: 128
       Role: !GetAtt
@@ -181,11 +186,8 @@ Resources:
       Handler: com.tomakeitgo.world.handler.CreatePlayerHandler::handleRequest
       Code:
         S3Bucket: !Ref DeploymentBucket
-        S3Key: !Join
-          - ''
-          - - 'world_'
-            - !Ref BuildVersion
-            - '.zip'
+        S3Key: "world.zip"
+        S3ObjectVersion: !Ref VersionId
       Timeout: 900
       MemorySize: 128
       Role: !GetAtt CreatePlayerLambdaRole.Arn
@@ -250,6 +252,99 @@ Resources:
           - ':'
           - !Ref API
           - '/*/*/*'
+
+  MoveShipLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - "lambda.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+
+  MoveShipLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      Runtime: java21
+      Handler: com.tomakeitgo.world.handler.MoveShipHandler::handleRequest
+      Code:
+        S3Bucket: !Ref DeploymentBucket
+        S3Key: "world.zip"
+        S3ObjectVersion: !Ref VersionId
+      Timeout: 900
+      MemorySize: 128
+      Role: !GetAtt MoveShipLambdaRole.Arn
+      Environment:
+        Variables:
+          PlayerTableName: !ImportValue 'world-data-prod-PlayerTableName'
+          ShipTableName: !ImportValue 'world-data-prod-ShipTableName'
+          ShipLocationTable: !ImportValue 'world-data-prod-ShipLocationTableName'
+
+  MoveShipLambdaPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      Roles:
+        - !Ref MoveShipLambdaRole
+      PolicyName: GrantLoggingAccess
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Action: logs:CreateLogGroup
+            Resource: !Join
+              - ''
+              - - 'arn:aws:logs:us-west-2:'
+                - !Ref AWS::AccountId
+                - ':*'
+          - Effect: Allow
+            Action:
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+            Resource: !Join
+              - ''
+              - - 'arn:aws:logs:us-west-2:'
+                - !Ref AWS::AccountId
+                - ':log-group:/aws/lambda/'
+                - !Ref MoveShipLambda
+                - ':*'
+          - Effect: Allow
+            Action:
+              - "dynamodb:Query"
+              - "dynamodb:Scan"
+              - "dynamodb:GetItem"
+              - "dynamodb:PutItem"
+              - "dynamodb:DeleteItem"
+            Resource:
+              - !ImportValue 'world-data-prod-PlayerTableArn'
+              - !ImportValue 'world-data-prod-ShipTableArn'
+              - !ImportValue 'world-data-prod-ShipLocationTableArn'
+              - !Join
+                - ''
+                - - !ImportValue 'world-data-prod-ShipLocationTableArn'
+                  - '/index/FindShip'
+
+
+  MoveShipLambdaAllowApiCall:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref MoveShipLambda
+      Action: lambda:InvokeFunction
+      Principal: 'apigateway.amazonaws.com'
+      SourceArn: !Join
+        - ''
+        - - 'arn:'
+          - !Ref 'AWS::Partition'
+          - ':execute-api:'
+          - !Ref 'AWS::Region'
+          - ':'
+          - !Ref 'AWS::AccountId'
+          - ':'
+          - !Ref API
+          - '/*/*/*'
+
 
   API:
     Type: AWS::ApiGatewayV2::Api
@@ -364,6 +459,37 @@ Resources:
         - '/'
         - - 'integrations'
           - !Ref CreatePlayerIntegration
+
+  MoveShipIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref API
+      Description: "Test Integration to the hello world lambda"
+      IntegrationType: AWS_PROXY
+      IntegrationMethod: POST
+      IntegrationUri: !Join
+        - ''
+        - - 'arn:'
+          - !Ref 'AWS::Partition'
+          - ':apigateway:'
+          - !Ref 'AWS::Region'
+          - ':lambda:path/2015-03-31/functions/'
+          - !GetAtt MoveShipLambda.Arn
+          - /invocations
+      PayloadFormatVersion: 2.0
+
+  MoveShipRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref API
+      RouteKey: "POST /move-ship"
+      AuthorizationType: CUSTOM
+      AuthorizerId: !Ref APIAuthorizer
+      Target: !Join
+        - '/'
+        - - 'integrations'
+          - !Ref MoveShipIntegration
+
 Outputs:
   DeploymentBucketRef:
     Value: !Ref DeploymentBucket

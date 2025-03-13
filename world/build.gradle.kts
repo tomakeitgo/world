@@ -19,9 +19,7 @@ java {
 }
 
 tasks.register<Zip>("buildZip") {
-    val version = properties.getOrDefault("build-version", "unset")
-
-    archiveFileName.set("world_${version}.zip")
+    archiveFileName.set("world.zip")
     into("lib") {
         from(tasks.jar)
         from(configurations.runtimeClasspath)

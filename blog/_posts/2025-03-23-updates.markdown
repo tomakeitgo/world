@@ -1,0 +1,51 @@
+---
+layout: post
+title: "AWS: S3 Lifecycles and Moving Forward"
+date: 2025-03-23 12:15:00 -0600
+categories: [ beginnings,aws ]
+---
+
+In the last entry, I set up a lifecycle policy on my deployment S3 bucket.
+It didn't work. The problem was my understanding of the prefix setting. I assumed
+that the Prefix attribute was required and that it was glob like syntax. Both of these
+ideas are wrong.
+
+I wanted the following yaml to keep 3 old versions of my deployment file. It didn't delete anything.
+
+```yaml
+  # More Definitions above 
+  LifecycleConfiguration:
+    Rules:
+      - Id: DeleteOldVersions
+        Prefix: "*"
+        Status: Enabled
+        NoncurrentVersionExpiration:
+          NoncurrentDays: 1
+          NewerNoncurrentVersions: 3
+```
+
+The version that works how I wanted looks like:
+
+```yaml
+  LifecycleConfiguration:
+    Rules:
+      - Id: DeleteOldVersions
+        Status: Enabled
+        NoncurrentVersionExpiration:
+          NoncurrentDays: 1
+          NewerNoncurrentVersions: 3
+```
+
+The prefix is simpler than I thought. It is a strict prefix match.
+The first definition was looking for objects in the bucket that started with an '*'.
+Prefix isn't required and a policy without it or the other conditions applies to the whole bucket.
+
+It took a couple of days to figure out what was going on. S3 lifecycle policies take about a day to do their thing. As best as I could find
+they get applied once a day. So mistakes have at least a day to become visible.
+
+### Moving Forward
+I have added logic for creating solar bodies (Star, Planet, and Dwarf Planet).  My next step is to figure out how to get a ship 
+that spirals out into the universe creating solar systems. The universe is mostly empty and starting to fill it seems the next move.
+
+[Repository](https://github.com/tomakeitgo/world)
+

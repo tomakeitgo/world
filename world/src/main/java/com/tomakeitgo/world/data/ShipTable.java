@@ -23,7 +23,8 @@ public class ShipTable {
                 .tableName(name)
                 .item(Map.of(
                         "ShipId", AttributeValue.fromS(ship.id()),
-                        "PlayerId", AttributeValue.fromS(ship.playerId())
+                        "PlayerId", AttributeValue.fromS(ship.playerId()),
+                        "Type", AttributeValue.fromS(ship.type())
                 ))
                 .build()
         );
@@ -52,7 +53,8 @@ public class ShipTable {
         var item = response.item();
         return Optional.of(new Ship(
                 item.get("ShipId").s(),
-                item.getOrDefault("PlayerId", AttributeValue.fromS("")).s()
+                item.getOrDefault("PlayerId", AttributeValue.fromS("")).s(),
+                item.getOrDefault("Type", AttributeValue.fromS("standard")).s()
         ));
     }
 }

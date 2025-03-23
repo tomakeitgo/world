@@ -4,12 +4,13 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPResponse;
-import com.google.gson.Gson;
 import com.tomakeitgo.world.MoveShip;
-import com.tomakeitgo.world.data.*;
+import com.tomakeitgo.world.data.Coordinate;
+import com.tomakeitgo.world.data.PlayerTable;
+import com.tomakeitgo.world.data.ShipLocationTable;
+import com.tomakeitgo.world.data.ShipTable;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
-import java.util.Base64;
 import java.util.Map;
 
 public class MoveShipHandler implements RequestHandler<APIGatewayV2HTTPEvent, APIGatewayV2HTTPResponse>, WithJson {
@@ -68,7 +69,7 @@ public class MoveShipHandler implements RequestHandler<APIGatewayV2HTTPEvent, AP
             response.setStatusCode(200);
             response.setBody(toJson(Map.of("type", "success")));
             return response;
-        }catch (Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
             throw e;
         }

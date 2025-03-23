@@ -12,12 +12,12 @@ class ShipTableTest implements WithDynamoClient {
 
     @Test
     void testPut() {
-        shipTable.put(new Ship("ShipId", "PlayerId"));
+        shipTable.put(new Ship("ShipId", "PlayerId", "standard"));
     }
 
     @Test
     void testDelete() {
-        shipTable.put(new Ship("ShipId", "PlayerId"));
+        shipTable.put(new Ship("ShipId", "PlayerId", "standard"));
         shipTable.delete("ShipId");
     }
 
@@ -28,7 +28,7 @@ class ShipTableTest implements WithDynamoClient {
 
     @Test
     void testFind_Present() {
-        shipTable.put(new Ship("ShipId", "PlayerId"));
+        shipTable.put(new Ship("ShipId", "PlayerId", "standard"));
         Optional<Ship> shipId = shipTable.find("ShipId");
         assertTrue(shipId.isPresent());
         shipId.ifPresent(i -> {

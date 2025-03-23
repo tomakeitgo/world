@@ -3,10 +3,7 @@ package com.tomakeitgo.world.data;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.*;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 public class ShipLocationTable {
     private final String name;
@@ -58,6 +55,8 @@ public class ShipLocationTable {
     }
 
     public void move(ShipLocation source, ShipLocation destination) {
+        if (Objects.equals(source, destination)) return;
+
         dynamoDbClient.transactWriteItems(TransactWriteItemsRequest.builder()
                 .transactItems(
                         TransactWriteItem.builder().put(

@@ -15,7 +15,7 @@ public class CreatePlayer {
 
         return new Result(
                 new Player(playerId, playerName),
-                new Ship(shipId, playerId),
+                new Ship(shipId, playerId, "standard"),
                 new ShipLocation(new Coordinate(0, 0, 0), shipId)
         );
     }

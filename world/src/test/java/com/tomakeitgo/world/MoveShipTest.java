@@ -14,7 +14,7 @@ class MoveShipTest {
         ShipLocation currentLocation = new ShipLocation(new Coordinate(-1, -1, -1), "shipId");
         var result = new MoveShip().doIt(new MoveShip.MoveRequest(
                 new Player("playerId", "name"),
-                new Ship("shipId", "playerId"),
+                new Ship("shipId", "playerId", "standard"),
                 currentLocation,
                 new Coordinate(2,3,5)
         ));
@@ -29,7 +29,7 @@ class MoveShipTest {
         ShipLocation currentLocation = new ShipLocation(new Coordinate(-1, -1, -1), "shipId");
         var result = new MoveShip().doIt(new MoveShip.MoveRequest(
                 new Player("playerId", "name"),
-                new Ship("shipId", "playerIdOne"),
+                new Ship("shipId", "playerIdOne", "standard"),
                 currentLocation,
                 new Coordinate(2,3,5)
         ));

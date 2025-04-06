@@ -1,0 +1,21 @@
+AWSTemplateFormatVersion: 2010-09-09
+Resources:
+  DeploymentBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    Properties:
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteOldVersions
+            Status: Enabled
+            NoncurrentVersionExpiration:
+              NoncurrentDays: 1
+              NewerNoncurrentVersions: 3
+Outputs:
+  DeploymentBucketRef:
+    Value: !Ref DeploymentBucket
+    Export:
+      Name:
+        'Fn::Sub': 's3-deployment'

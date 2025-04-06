@@ -5,3 +5,4 @@ rootProject.name = "world"
 
 
 include( "world")
+include( "world-npc")

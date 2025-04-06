@@ -4,21 +4,6 @@ Parameters:
     Type: String
     Description: zip file version.
 Resources:
-  #S3 Bucket used to store the binaries for deployment.
-  DeploymentBucket:
-    Type: AWS::S3::Bucket
-    DeletionPolicy: Retain
-    Properties:
-      VersioningConfiguration:
-        Status: Enabled
-      LifecycleConfiguration:
-        Rules:
-          - Id: DeleteOldVersions
-            Status: Enabled
-            NoncurrentVersionExpiration:
-              NoncurrentDays: 1
-              NewerNoncurrentVersions: 3
-
   SimpleHeaderAuthorizerLambdaRole:
     Type: AWS::IAM::Role
     Properties:
@@ -38,7 +23,7 @@ Resources:
       Runtime: java21
       Handler: com.tomakeitgo.world.SimpleHeaderAuthorizerHandler::handleRequest
       Code:
-        S3Bucket: !Ref DeploymentBucket
+        S3Bucket: !ImportValue s3-deployment
         S3Key: "world.zip"
         S3ObjectVersion: !Ref VersionId
       Timeout: 900
@@ -111,7 +96,7 @@ Resources:
       Runtime: java21
       Handler: com.tomakeitgo.world.HelloWorldHandler::handleRequest
       Code:
-        S3Bucket: !Ref DeploymentBucket
+        S3Bucket: !ImportValue s3-deployment
         S3Key: "world.zip"
         S3ObjectVersion: !Ref VersionId
       Timeout: 900
@@ -184,7 +169,7 @@ Resources:
       Runtime: java21
       Handler: com.tomakeitgo.world.handler.CreatePlayerHandler::handleRequest
       Code:
-        S3Bucket: !Ref DeploymentBucket
+        S3Bucket: !ImportValue s3-deployment
         S3Key: "world.zip"
         S3ObjectVersion: !Ref VersionId
       Timeout: 900
@@ -273,7 +258,7 @@ Resources:
       Runtime: java21
       Handler: com.tomakeitgo.world.handler.MoveShipHandler::handleRequest
       Code:
-        S3Bucket: !Ref DeploymentBucket
+        S3Bucket: !ImportValue s3-deployment
         S3Key: "world.zip"
         S3ObjectVersion: !Ref VersionId
       Timeout: 900
@@ -366,7 +351,7 @@ Resources:
       Runtime: java21
       Handler: com.tomakeitgo.world.handler.CreateSolarBodyHandler::handleRequest
       Code:
-        S3Bucket: !Ref DeploymentBucket
+        S3Bucket: !ImportValue s3-deployment
         S3Key: "world.zip"
         S3ObjectVersion: !Ref VersionId
       Timeout: 900
@@ -615,7 +600,3 @@ Resources:
         - '/'
         - - 'integrations'
           - !Ref MoveShipIntegration
-
-Outputs:
-  DeploymentBucketRef:
-    Value: !Ref DeploymentBucket

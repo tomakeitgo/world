@@ -46,6 +46,12 @@ public class CreateSolarBodyHandler implements RequestHandler<APIGatewayV2HTTPEv
         if (resp.hasErrors()) {
             return toResponse(Map.of("type", "error", "details", resp.getError()));
         } else {
+            var location = resp.getResult().bodyLocation();
+            var body = resp.getResult().body();
+
+            shipLocationTable.put(location);
+            shipTable.put(body);
+
             return toResponse(Map.of("type", "success"));
         }
     }

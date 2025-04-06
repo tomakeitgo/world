@@ -1,10 +1,5 @@
 #!/bin/zsh
-bucket=$(aws cloudformation describe-stacks \
-	 --region us-west-2 \
-	 --stack-name world  \
-	 --query "Stacks[0].Outputs[?OutputKey=='DeploymentBucketRef'].OutputValue" \
-	 --output text \
-	 )
+bucket='deployment-deploymentbucket-fmgact3vwzux'
 
 echo "gradlew clean build buildZip -p world"
 /bin/bash gradlew clean build buildZip -p world
